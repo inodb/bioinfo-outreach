@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Genomics Wranglers - Bash and GNU Parallel</title>
+
+		<meta name="description" content="A framework for easily creating beautiful presentations using HTML">
+		<meta name="author" content="Hakim El Hattab">
+
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<link rel="stylesheet" href="css/reveal.min.css">
+		<link rel="stylesheet" href="css/theme/default.css" id="theme">
+
+		<!-- For syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- If the query includes 'print-pdf', use the PDF print sheet -->
+		<script>
+			document.write( '<link rel="stylesheet" href="css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section>
+					<h1>Genomics Wranglers</h1>
+					<h3>Bash and GNU Parallel NGS Bidniz</h3>
+					<p>
+						<small><a href="http://ino.pm">Ino de Bruijn</a> / <a href="http://twitter.com/inodb">@inodb</a></small>
+					</p>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Content
+
+                        - Bash
+                        - GNU Parallel
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Hello World
+
+                        ```
+                        #!/bin/bash          
+                        echo Hello World
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Redirection
+
+                        Three file descriptors:
+
+                        - stdin
+                        - stdout (1)
+                        - stderr (2)
+
+                        ```
+                        echo scilifeswag 1> scilifeswag.txt
+                        echo scilifeswag 2> scilifeswag-err.log
+                        echo scilifeswag 2>&1         #stderr2stdout
+                        echo scilifeswag 1>&2         #stdout2stderr
+                        echo scilifeswag &> /dev/null # stdout+stderr
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Pipes
+
+                        Connect programs together and share the love!
+
+                        ```
+                        echo -e "love\nhate" | grep love
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Variables
+
+                        Because love is variable
+                        ```
+                        LOVE=scilifelab
+                        echo $LOVE                 # scilifelab
+                        echo ${LOVE:2}             # ilifelab
+                        echo ${LOVE:0: ${#LOVE}-3} # scilife
+                        echo ${LOVE: -3}           # lab
+                        echo ${LOVE:3: -3}         # life
+                        echo ${LOVE:3:4}           # life
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Variables
+
+                        And replaceable by avocados
+                        ```
+                        echo ${LOVE/scilife/avocado} # avocadolab
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Variables
+
+                        String replacement is pretty crazy
+                        ```
+                        echo ${LOVE/i/ }           # sc lifelab
+                        echo ${LOVE//i/ }          # sc l felab
+                        echo ${LOVE/#i/ }          # scilifelab
+                        echo ${LOVE/#sci/ }        #    lifelab
+                        echo ${LOVE/%lab/ }        # scilife
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Variables
+
+                        Substring removal even more, but it is short
+                        ```
+                        echo ${LOVE#s*l}        # ifelab
+                        echo ${LOVE##s*l}       # ab
+                        echo ${LOVE%l*b}        # scilife
+                        echo ${LOVE%%l*b}       # sci
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Variables
+
+                        Don't forgot that a single quote does not do variable
+                        substitution
+                        ```
+                        echo '${LOVE}'          # ${LOVE}
+                        echo "$LOVE"            # scilifelab
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Conditionals
+
+                        I know this looks pretty straightforward
+                        ```
+                        #!/bin/bash
+                        if [[ "$LOVE" = "real" ]]; then
+                            echo you a swan
+                        elif [[ "$LOVE = "easy" ]]; then
+                            echo you a bonobo
+                        else
+                            echo you a duck
+                        fi
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Conditionals
+                        But bash wouldn't bash if it didn't have some more
+                        ridiculous syntax lined up. Pay attention when to use:
+
+                        - ``[`` old skool for more portability
+                        - ``[[`` new skool with regexes and what not
+                        - ``((`` arithmetics
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Subshells
+                        Alright time for some stuff that is actually useful,
+                        like how to launch a subshell. 
+
+                        ```
+                        echo $(echo $LOVE)                     # scilifelab
+                        echo `echo $LOVE`                      # scilifelab
+                        echo $(LOVE=avocado; echo $LOVE)       # avocado
+                        echo $LOVE                             # scilifelab
+                        echo $LOVE &                           # [JOBNR] PID
+                        ```
+
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: For loop
+                        Now the moment we have all been waiting for!
+
+                        ```
+                        for i in 1 2 3 4 5; do
+                            echo $i
+                        done
+                        ```
+                    </script>
+				</section>
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.min.js"></script>
+
+		<script>
+
+			// Full list of configuration options available here:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+                slideNumber: true,
+
+				theme: Reveal.getQueryHash().theme, // available themes are in /css/theme
+				transition: Reveal.getQueryHash().transition || 'linear', // default/cube/page/concave/zoom/linear/fade/none
+
+				// Parallax scrolling
+				// parallaxBackgroundImage: 'https://s3.amazonaws.com/hakim-static/reveal-js/reveal-parallax-1.jpg',
+				// parallaxBackgroundSize: '2100px 900px',
+
+				// Optional libraries used to extend on reveal.js
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true, condition: function() { return !!document.body.classList; } },
+					{ src: 'plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>
