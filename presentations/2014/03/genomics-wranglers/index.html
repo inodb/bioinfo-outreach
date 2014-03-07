@@ -152,8 +152,8 @@
                         Don't forgot that a single quote does not do variable
                         substitution
                         ```
-                        echo '${LOVE}'          # ${LOVE}
-                        echo "${LOVE}"          # scilifelab
+                        echo 'I love ${LOVE}'  # I love ${LOVE}
+                        echo "I love ${LOVE}"  # I love scilifelab
                         ```
                     </script>
 				</section>
@@ -303,7 +303,7 @@
                         You can also use sbatch on Uppmax instead of course.
 
                         ```
-                        for i in *.1.fastq; do
+                        for i in *.1.fastq.gz; do
                             sbatch -A ac_number \
                                 -t 2:00:00 -J ${i%.1.fastq.gz} \
                                 -p core -n 1 
@@ -334,7 +334,8 @@
 				</section>
                 <section>
                     <h2>Valhalla</h2>
-                    <img src="img/walhalla.jpg" alt="Walhalla" />
+                    <img src="img/walhalla.jpg" alt="Walhalla" /><br />
+                    Presentation at<br /><a href="http://bit.ly/havemychildprocessesino">bit.ly/havemychildprocessesino</a>
                 </section>
 			</div>
 		</div>
