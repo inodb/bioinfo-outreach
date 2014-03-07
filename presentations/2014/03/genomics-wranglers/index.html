@@ -49,6 +49,7 @@
 
                         - Bash
                         - GNU Parallel
+                        - Valhalla
                     </script>
 				</section>
                 <section data-markdown>
@@ -74,9 +75,9 @@
                         ```
                         echo scilifeswag 1> scilifeswag.txt
                         echo scilifeswag 2> scilifeswag-err.log
-                        echo scilifeswag 2>&1         #stderr2stdout
-                        echo scilifeswag 1>&2         #stdout2stderr
-                        echo scilifeswag &> /dev/null # stdout+stderr
+                        echo scilifeswag 2>&1                      # stderr2stdout
+                        echo scilifeswag 1>&2                      # stdout2stderr
+                        echo scilifeswag &> /dev/null              # stdout+stderr
                         ```
                     </script>
 				</section>
@@ -111,7 +112,7 @@
                     <script type="text/template">
                         ## Bash: Variables
 
-                        And replaceable by avocados
+                        Love is replaceable by avocados
                         ```
                         echo ${LOVE/scilife/avocado} # avocadolab
                         ```
@@ -135,7 +136,7 @@
                     <script type="text/template">
                         ## Bash: Variables
 
-                        Substring removal even more, but it is short
+                        Substring removal is even crazier, but it is short
                         ```
                         echo ${LOVE#s*l}        # ifelab
                         echo ${LOVE##s*l}       # ab
@@ -152,7 +153,7 @@
                         substitution
                         ```
                         echo '${LOVE}'          # ${LOVE}
-                        echo "$LOVE"            # scilifelab
+                        echo "${LOVE}"          # scilifelab
                         ```
                     </script>
 				</section>
@@ -187,15 +188,14 @@
                 <section data-markdown>
                     <script type="text/template">
                         ## Bash: Subshells
-                        Alright time for some stuff that is actually useful,
-                        like how to launch a subshell. 
+                        Love exists in child processes as well!
 
                         ```
-                        echo $(echo $LOVE)                     # scilifelab
-                        echo `echo $LOVE`                      # scilifelab
-                        echo $(LOVE=avocado; echo $LOVE)       # avocado
-                        echo $LOVE                             # scilifelab
-                        echo $LOVE &                           # [JOBNR] PID
+                        echo $(echo $LOVE)               # scilifelab
+                        echo `echo $LOVE`                # scilifelab
+                        echo $(LOVE=avocado; echo $LOVE) # avocado
+                        echo $LOVE                       # scilifelab
+                        echo $LOVE &                     # [JOBNR] PID
                         ```
 
                     </script>
@@ -203,15 +203,139 @@
                 <section data-markdown>
                     <script type="text/template">
                         ## Bash: For loop
-                        Now the moment we have all been waiting for!
+                        Now the moment we have all been waiting for loop!
 
                         ```
-                        for i in 1 2 3 4 5; do
+                        for i in the moment we have all been waiting for; do
                             echo $i
                         done
                         ```
                     </script>
 				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: For loop paralellization
+                        We should totally use that for loop on some NGS data
+                        and spawn child processes to run it in parallel!
+
+                        ```
+                        for i in feces.fastq manure.fastq rumen.fastq; do
+                            grep '^>that_one_crazy_read' $i &
+                        done
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Globbing
+                        Actually I want it to process all my pairs with this
+                        ``process_pairs`` script that does not have any
+                        paralellization of its own.
+
+                        ```
+                        for i in *.1.fastq; do
+                            process_pairs $i ${i/1.fastq/2.fastq} > ${i%.1.fastq}.pp.log &
+                        done
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Process substitution
+                        OMG rthang is gzip'd! A regular subshell doesn't work
+                        because we need a file descriptor - process substitution with ``<()``!
+
+                        ```
+                        for i in *.1.fastq.gz; do
+                            process_pairs <(zcat $i) <(zcat ${i/1.fastq/2.fastq}) \
+                                > ${i%.1.fastq.gz}.pp.log &
+                        done
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## Bash: Parallelize to number of cores
+                        Shit there's way more files than cores on this machine.
+                        There are so many child processes launched, I should
+                        have one for every core instead.
+
+                        ```
+                        count=0
+                        NR_CPUS=4
+                        for i in *.1.fastq; do
+                            process_pairs <(zcat $i) <(zcat ${i/1.fastq/2.fastq}) \
+                                > ${i%.1.fastq.gz}.pp.log &
+                            let count+=1
+                            [[ $((count%NR_CPUS)) -eq 0 ]] && wait
+                        done
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## GNU Parallel
+                        It is easier to parallelize to the number of cores with
+                        GNU parallel. This is the default. Even more crazy
+                        syntax to learn though.
+
+                        ```
+                        parallel echo {} ::: *.1.fastq
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## GNU Parallel pairs
+                        Same command as before now in parallel scaling to one
+                        job per core
+
+                        ```
+                        parallel 'i={}; 
+                            process_pairs <(zcat ${i}) <(zcat ${i/1.fastq/2.fastq}) 
+                                > ${i%.1.fastq}.pp.log'  ::: *.1.fastq.gz
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## sbatch to parallize
+                        You can also use sbatch on Uppmax instead of course.
+
+                        ```
+                        for i in *.1.fastq; do
+                            sbatch -A ac_number \
+                                -t 2:00:00 -J ${i%.1.fastq.gz} \
+                                -p core -n 1 
+                                --wrap="
+                                    process_pairs <(zcat $i) <(zcat ${i/1.fastq/2.fastq}) \
+                                        > ${i%.1.fastq.gz}.pp.log" 
+                        done
+                        ```
+                    </script>
+				</section>
+                <section data-markdown>
+                    <script type="text/template">
+                        ## sbatch and GNU parallel
+                        Heck, you can even combine them.
+
+                        Running on multiple nodes using all cores.
+
+                        ```
+                        sbatch -A ac_number \
+                            -t 2:00:00 -J ${i.1.fastq.gz} \
+                            -p node -N 5
+                            --wrap="
+                                parallel --slf <(scontrol show hostnames \$SLURM_NODELIST) 'i={}; 
+                                    process_pairs <(zcat ${i}) <(zcat ${i/1.fastq/2.fastq}) 
+                                        > ${i%.1.fastq}.pp.log'  ::: *.1.fastq.gz"
+                        ```
+                    </script>
+				</section>
+                <section>
+                    <h2>Valhalla</h2>
+                    <img src="img/walhalla.jpg" alt="Walhalla" />
+                </section>
 			</div>
 		</div>
 
