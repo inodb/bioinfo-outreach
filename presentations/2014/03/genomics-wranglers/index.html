@@ -323,7 +323,7 @@
 
                         ```
                         sbatch -A ac_number \
-                            -t 2:00:00 -J ${i.1.fastq.gz} \
+                            -t 2:00:00 -J multinode_pairs \
                             -p node -N 5
                             --wrap="
                                 parallel --slf <(scontrol show hostnames \$SLURM_NODELIST) 'i={}; 
